@@ -14,6 +14,7 @@
 		"@cloudflare/vitest-pool-workers": "workspace:*",
 		"@cloudflare/workers-types": "catalog:default",
 		"@microlabs/otel-cf-workers": "1.0.0-rc.45",
+		"@msw/cloudflare": "https://pkg.pr.new/mswjs/cloudflare/@msw/cloudflare@a56438d",
 		"@types/mime-types": "^3.0.1",
 		"@types/node": "catalog:default",
 		"@types/nunjucks": "^3.2.6",
@@ -31,7 +32,6 @@
 		"typescript": "catalog:default",
 		"vite": "catalog:default",
 		"vitest": "catalog:default",
-		"wasm-module-dep": "file:./module-resolution/vendor/wasm-module-dep",
 		"wrangler": "workspace:*"
 	}
 }
