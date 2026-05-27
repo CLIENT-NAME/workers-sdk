@@ -45,6 +45,7 @@
 		"undici": "catalog:default"
 	},
 	"devDependencies": {
+		"ci-info": "catalog:default",
 		"@cloudflare/workers-shared": "workspace:*",
 		"@cloudflare/workers-tsconfig": "workspace:*",
 		"@cloudflare/workflows-shared": "workspace:*",
