@@ -6,6 +6,7 @@ import type {
 	Config,
 	EphemeralDirectory,
 	FetchResultFetcher,
+	FetchListResultFetcher,
 	Logger,
 	Route,
 	Entry,
@@ -18,7 +19,16 @@ import type { NodeJSCompatMode } from "miniflare";
  */
 export type DeployHelpersContext = {
 	fetchResult: FetchResultFetcher;
+	fetchListResult: FetchListResultFetcher;
 	logger: Logger;
+	confirm: (
+		text: string,
+		options?: { defaultValue?: boolean; fallbackValue?: boolean }
+	) => Promise<boolean>;
+	prompt: (
+		text: string,
+		options?: { defaultValue?: string }
+	) => Promise<string>;
 };
 
 /**
@@ -121,4 +131,15 @@ export type VersionsUploadProps = SharedDeployVersionsProps & {
 	command: "versions upload";
 	/** CLI-only (--preview-alias), or auto-generated from CI branch name. */
 	previewAlias: string | undefined;
+};
+
+export type TriggerProps = {
+	config: Config;
+	accountId: string;
+	scriptName: string;
+	env: string | undefined;
+	crons: string[] | undefined;
+	routes: Route[];
+	useServiceEnvironments: boolean;
+	firstDeploy: boolean;
 };
