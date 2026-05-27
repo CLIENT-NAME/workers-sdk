@@ -15,8 +15,8 @@ import {
 import { updateQueueConsumers } from "./queue-consumers";
 import { getWorkersDevSubdomain } from "./subdomain";
 import { getZoneForRoute } from "./zones";
-import type { RouteObject } from "./publish-routes";
 import type { DeployHelpersContext, TriggerProps } from "../shared/types";
+import type { RouteObject } from "./publish-routes";
 import type { Config, Route } from "@cloudflare/workers-utils";
 
 export default async function triggersDeploy(
@@ -173,13 +173,7 @@ export default async function triggersDeploy(
 
 	if (customDomainsOnly.length > 0) {
 		deployments.push(
-			publishCustomDomains(
-				config,
-				workerUrl,
-				accountId,
-				customDomainsOnly,
-				ctx
-			)
+			publishCustomDomains(config, workerUrl, accountId, customDomainsOnly, ctx)
 		);
 	}
 
@@ -273,25 +267,20 @@ export default async function triggersDeploy(
 		: scriptName;
 
 	if (deployments.length > 0) {
-		ctx.logger.log(
-			`Deployed ${workerName} triggers`,
-			formatTime(deployMs)
-		);
+		ctx.logger.log(`Deployed ${workerName} triggers`, formatTime(deployMs));
 
-		const flatTargets = targets.flat().map(
-			(target) => (target.endsWith("workers.dev") ? "https://" : "") + target
-		);
+		const flatTargets = targets
+			.flat()
+			.map(
+				(target) => (target.endsWith("workers.dev") ? "https://" : "") + target
+			);
 
 		for (const target of flatTargets) {
 			ctx.logger.log(" ", target);
 		}
 		return flatTargets;
 	} else {
-		ctx.logger.log(
-			"No deploy targets for",
-			workerName,
-			formatTime(deployMs)
-		);
+		ctx.logger.log("No deploy targets for", workerName, formatTime(deployMs));
 	}
 }
 
@@ -412,12 +401,9 @@ async function subdomainDeploy(
 		getSubdomainValues(config.workers_dev, config.preview_urls, routes);
 
 	if (wantWorkersDev) {
-		const userSubdomain = await getWorkersDevSubdomain(
-			config,
-			accountId,
-			ctx,
-			{ configPath: config.configPath }
-		);
+		const userSubdomain = await getWorkersDevSubdomain(config, accountId, ctx, {
+			configPath: config.configPath,
+		});
 		const workersDevURL =
 			!props.useServiceEnvironments || !props.env
 				? `${scriptName}.${userSubdomain}`

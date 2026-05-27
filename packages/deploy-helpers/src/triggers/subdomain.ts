@@ -5,7 +5,10 @@ import {
 } from "@cloudflare/workers-utils";
 import chalk from "chalk";
 import type { DeployHelpersContext } from "../shared/types";
-import type { ComplianceConfig, ApiCredentials } from "@cloudflare/workers-utils";
+import type {
+	ComplianceConfig,
+	ApiCredentials,
+} from "@cloudflare/workers-utils";
 
 type WorkersDevSubdomainRegistrationContext = "workers_dev" | "workflows";
 
@@ -150,9 +153,7 @@ async function registerSubdomain(
 					);
 					continue;
 				} else {
-					ctx.logger.error(
-						"An unexpected error occurred, please try again."
-					);
+					ctx.logger.error("An unexpected error occurred, please try again.");
 					continue;
 				}
 			}
@@ -197,9 +198,7 @@ async function registerSubdomain(
 						);
 						break;
 					default:
-						ctx.logger.error(
-							"An unexpected error occurred, please try again."
-						);
+						ctx.logger.error("An unexpected error occurred, please try again.");
 						break;
 				}
 			}

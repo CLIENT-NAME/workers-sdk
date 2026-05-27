@@ -157,13 +157,9 @@ export async function updateQueueConsumers(
 			continue;
 		}
 		updateConsumers.push(
-			postConsumer(
-				complianceConfig,
-				accountId,
-				consumer.queue,
-				body,
-				ctx
-			).then(() => [`Consumer for ${consumer.queue}`])
+			postConsumer(complianceConfig, accountId, consumer.queue, body, ctx).then(
+				() => [`Consumer for ${consumer.queue}`]
+			)
 		);
 	}
 

@@ -1,8 +1,4 @@
-import {
-	ParseError,
-	retryOnAPIFailure,
-	UserError,
-} from "@cloudflare/workers-utils";
+import { ParseError, UserError } from "@cloudflare/workers-utils";
 import PQueue from "p-queue";
 import { getZoneForRoute } from "./zones";
 import type { DeployHelpersContext } from "../shared/types";
@@ -112,11 +108,16 @@ export async function publishRoutes(
 		});
 	} catch (e) {
 		if (isAuthenticationError(e)) {
-			return await publishRoutesFallback(complianceConfig, routes, {
-				scriptName,
-				useServiceEnvironments,
-				accountId,
-			}, ctx);
+			return await publishRoutesFallback(
+				complianceConfig,
+				routes,
+				{
+					scriptName,
+					useServiceEnvironments,
+					accountId,
+				},
+				ctx
+			);
 		} else {
 			throw e;
 		}
