@@ -23,11 +23,15 @@ export async function runDev(argv: string[]): Promise<number> {
 	}
 
 	// SIGINT/SIGTERM fallback for non-TTY parents — hotkeys handle
-	// the TTY case.
+	// the TTY case. Tracks both the signal AND a reference to the
+	// server (which arrives asynchronously) so signals received during
+	// `unstable_dev`'s startup phase don't get swallowed.
 	let signalled: NodeJS.Signals | null = null;
 	let server: wrangler.Unstable_DevWorker | undefined;
 	const onSignal = (sig: NodeJS.Signals) => {
 		signalled = sig;
+		// If startup has already produced a server, tear it down now.
+		// Otherwise the post-await check below handles it.
 		void server?.stop().catch((err) => {
 			process.stderr.write(`teardown error: ${err}\n`);
 		});
@@ -56,7 +60,14 @@ export async function runDev(argv: string[]): Promise<number> {
 
 		// Entrypoint comes from `main` in wrangler config.
 		server = await wrangler.unstable_dev("", options);
-		await server.waitUntilExit();
+
+		// Signal arrived during startup. Tear down immediately and
+		// skip `waitUntilExit`.
+		if (signalled !== null) {
+			await server.stop().catch(() => {});
+		} else {
+			await server.waitUntilExit();
+		}
 	} finally {
 		process.off("SIGINT", onSigInt);
 		process.off("SIGTERM", onSigTerm);

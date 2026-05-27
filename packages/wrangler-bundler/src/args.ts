@@ -5,10 +5,6 @@
  * process needs to pass through are accepted. Everything else
  * belongs in the user's `wrangler.jsonc`. Built on `node:util`'s
  * built-in `parseArgs` (strict mode → unknown flags throw).
- *
- * Note: remote *bindings* (per-resource `remote = true` in
- * `wrangler.jsonc`) are fully supported by wrangler-bundler — they
- * just don't need a flag here.
  */
 import { parseArgs as nodeParseArgs } from "node:util";
 
@@ -50,7 +46,10 @@ export function parseArgs(argv: string[]): DevArgs {
 			},
 			strict: true,
 			allowPositionals: false,
-			allowNegative: true,
+			// Deliberately NOT enabling `allowNegative`: `--no-local`
+			// would map to `local: false`, which `unstable_dev` reads
+			// as whole-worker remote dev — out of scope here. Falling
+			// into the generic "unknown flag" error is the right UX.
 		});
 	} catch (err) {
 		throw new ArgParseError(err instanceof Error ? err.message : String(err));
@@ -67,10 +66,12 @@ export function parseArgs(argv: string[]): DevArgs {
 		out.host = parsed.values.host;
 	}
 	if (parsed.values.port !== undefined) {
-		const n = Number(parsed.values.port);
-		if (!Number.isFinite(n)) {
+		const raw = parsed.values.port;
+		const n = Number(raw);
+		// TCP port range. `0` means "let the OS pick" — valid.
+		if (!Number.isInteger(n) || n < 0 || n > 65535) {
 			throw new ArgParseError(
-				`--port expects a number, got "${parsed.values.port}"`
+				`--port expects an integer between 0 and 65535, got "${raw}"`
 			);
 		}
 		out.port = n;

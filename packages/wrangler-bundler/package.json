@@ -1,7 +1,7 @@
 {
 	"name": "@cloudflare/wrangler-bundler",
 	"version": "0.0.0",
-	"description": "esbuild-based dev server for Cloudflare Workers, extracted from wrangler dev. Ships a `cf-wrangler` delegate binary.",
+	"description": "esbuild-based dev server for Cloudflare Workers, extracted from `wrangler dev`",
 	"license": "MIT OR Apache-2.0",
 	"repository": {
 		"type": "git",
@@ -24,14 +24,12 @@
 			"import": "./dist/index.mjs"
 		}
 	},
-	"publishConfig": {
-		"access": "public"
-	},
 	"scripts": {
 		"build": "tsdown",
 		"dev": "tsdown --watch",
 		"check:type": "tsc --build",
 		"test": "vitest run",
+		"test:ci": "vitest run",
 		"test:watch": "vitest"
 	},
 	"dependencies": {
