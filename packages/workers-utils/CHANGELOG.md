@@ -1,5 +1,49 @@
 # @cloudflare/workers-utils
 
+## 0.22.0
+
+### Minor Changes
+
+- [#13860](https://github.com/cloudflare/workers-sdk/pull/13860) [`c8c7ec0`](https://github.com/cloudflare/workers-sdk/commit/c8c7ec0bde012ffe9fefe01cb15c7b0d030a6777) Thanks [@oliy](https://github.com/oliy)! - Rename `pipeline` field to `stream` in pipeline bindings configuration
+
+  The `pipeline` field inside `pipelines` bindings has been renamed to `stream` to align with the updated API wire format. The old `pipeline` field is still accepted but deprecated and will emit a warning.
+
+  Before:
+
+  ```jsonc
+  // wrangler.json
+  {
+    "pipelines": [
+      {
+        "binding": "MY_PIPELINE",
+        "pipeline": "my-stream-name"
+      }
+    ]
+  }
+  ```
+
+  After:
+
+  ```jsonc
+  // wrangler.json
+  {
+    "pipelines": [
+      {
+        "binding": "MY_PIPELINE",
+        "stream": "my-stream-name"
+      }
+    ]
+  }
+  ```
+
+### Patch Changes
+
+- [#12400](https://github.com/cloudflare/workers-sdk/pull/12400) [`d4177ce`](https://github.com/cloudflare/workers-sdk/commit/d4177ce1ba23e67cfe8cbc6a181ac6b2c510d1e9) Thanks [@dario-piotrowicz](https://github.com/dario-piotrowicz)! - Filter compatibility date fallback warning when no update is available
+
+  The compatibility date warning from workerd (e.g., "The latest compatibility date supported by the installed Cloudflare Workers Runtime is...") is now only shown when a newer version of `@cloudflare/vite-plugin` is available. This matches the behavior in Wrangler and reduces noise when the user is already on the latest version.
+
+  The update-check logic has been extracted to `@cloudflare/workers-utils` so it can be shared across packages.
+
 ## 0.21.1
 
 ### Patch Changes

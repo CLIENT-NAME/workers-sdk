@@ -1,5 +1,62 @@
 # wrangler
 
+## 4.96.0
+
+### Minor Changes
+
+- [#13860](https://github.com/cloudflare/workers-sdk/pull/13860) [`c8c7ec0`](https://github.com/cloudflare/workers-sdk/commit/c8c7ec0bde012ffe9fefe01cb15c7b0d030a6777) Thanks [@oliy](https://github.com/oliy)! - Rename `pipeline` field to `stream` in pipeline bindings configuration
+
+  The `pipeline` field inside `pipelines` bindings has been renamed to `stream` to align with the updated API wire format. The old `pipeline` field is still accepted but deprecated and will emit a warning.
+
+  Before:
+
+  ```jsonc
+  // wrangler.json
+  {
+    "pipelines": [
+      {
+        "binding": "MY_PIPELINE",
+        "pipeline": "my-stream-name"
+      }
+    ]
+  }
+  ```
+
+  After:
+
+  ```jsonc
+  // wrangler.json
+  {
+    "pipelines": [
+      {
+        "binding": "MY_PIPELINE",
+        "stream": "my-stream-name"
+      }
+    ]
+  }
+  ```
+
+- [#13960](https://github.com/cloudflare/workers-sdk/pull/13960) [`39d8717`](https://github.com/cloudflare/workers-sdk/commit/39d8717208feab9801b73a8ef781e181c258a6f6) Thanks [@cmackenzie1](https://github.com/cmackenzie1)! - Allow pipeline, stream, and sink commands to resolve resources by name with pagination-aware lookups.
+
+- [#14019](https://github.com/cloudflare/workers-sdk/pull/14019) [`ee56ec0`](https://github.com/cloudflare/workers-sdk/commit/ee56ec0b823f761afd4bc2012594f3739948a904) Thanks [@danielrs](https://github.com/danielrs)! - Support deleting secrets via `wrangler secret bulk`
+
+  You can now delete secrets in bulk by setting their value to `null` in the JSON input file:
+
+  ```json
+  { "SECRET_TO_DELETE": null, "SECRET_TO_UPDATE": "new-value" }
+  ```
+
+### Patch Changes
+
+- [#14068](https://github.com/cloudflare/workers-sdk/pull/14068) [`2c1d8b2`](https://github.com/cloudflare/workers-sdk/commit/2c1d8b23dcf666a5626e389e37d027d71a56e5e3) Thanks [@dario-piotrowicz](https://github.com/dario-piotrowicz)! - Bump `rosie-skills` package from 0.6.3 to 0.7.6
+
+- [#13815](https://github.com/cloudflare/workers-sdk/pull/13815) [`5fa3de6`](https://github.com/cloudflare/workers-sdk/commit/5fa3de663217683d59c9a0fc95d99b616d558619) Thanks [@penalosa](https://github.com/penalosa)! - Disable Sentry error reporting by default
+
+  `WRANGLER_SEND_ERROR_REPORTS` now defaults to `false` instead of prompting on every error. The current prompt produces too many false-positive reports. Users can still opt in explicitly by setting `WRANGLER_SEND_ERROR_REPORTS=true`.
+
+- Updated dependencies [[`c8c7ec0`](https://github.com/cloudflare/workers-sdk/commit/c8c7ec0bde012ffe9fefe01cb15c7b0d030a6777)]:
+  - miniflare@4.20260526.1
+
 ## 4.95.0
 
 ### Minor Changes

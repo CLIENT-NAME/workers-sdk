@@ -1,5 +1,19 @@
 # @cloudflare/vite-plugin
 
+## 1.39.1
+
+### Patch Changes
+
+- [#12400](https://github.com/cloudflare/workers-sdk/pull/12400) [`d4177ce`](https://github.com/cloudflare/workers-sdk/commit/d4177ce1ba23e67cfe8cbc6a181ac6b2c510d1e9) Thanks [@dario-piotrowicz](https://github.com/dario-piotrowicz)! - Filter compatibility date fallback warning when no update is available
+
+  The compatibility date warning from workerd (e.g., "The latest compatibility date supported by the installed Cloudflare Workers Runtime is...") is now only shown when a newer version of `@cloudflare/vite-plugin` is available. This matches the behavior in Wrangler and reduces noise when the user is already on the latest version.
+
+  The update-check logic has been extracted to `@cloudflare/workers-utils` so it can be shared across packages.
+
+- Updated dependencies [[`2c1d8b2`](https://github.com/cloudflare/workers-sdk/commit/2c1d8b23dcf666a5626e389e37d027d71a56e5e3), [`5fa3de6`](https://github.com/cloudflare/workers-sdk/commit/5fa3de663217683d59c9a0fc95d99b616d558619), [`c8c7ec0`](https://github.com/cloudflare/workers-sdk/commit/c8c7ec0bde012ffe9fefe01cb15c7b0d030a6777), [`39d8717`](https://github.com/cloudflare/workers-sdk/commit/39d8717208feab9801b73a8ef781e181c258a6f6), [`ee56ec0`](https://github.com/cloudflare/workers-sdk/commit/ee56ec0b823f761afd4bc2012594f3739948a904)]:
+  - wrangler@4.96.0
+  - miniflare@4.20260526.1
+
 ## 1.39.0
 
 ### Minor Changes
