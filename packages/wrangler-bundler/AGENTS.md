@@ -4,8 +4,8 @@
 
 esbuild-based dev server for Cloudflare Workers, extracted from
 `wrangler dev` for projects that can't migrate to Vite. This is a
-thin (~150-line) adapter on top of wrangler's `unstable_DevEnv` API —
-it is NOT a fork of wrangler internals.
+thin adapter on top of wrangler's `unstable_dev` API — it is NOT a
+fork of wrangler internals.
 
 The package ships a `cf-wrangler` delegate binary that dispatches on
 a leading subcommand verb. Today the only verb is `dev`
@@ -20,38 +20,55 @@ the binary runs the dev server until Ctrl+C.
 - `bin/cf-wrangler` — executable shim; dispatches on the first argv
   token (`dev` today) and delegates to the matching handler.
 - `src/index.ts` — programmatic API (`runDev`, `DevArgs`).
-- `src/cli.ts` — `runDev` main loop: construct `unstable_DevEnv`,
-  wire signals, block on teardown.
-- `src/args.ts` — `yargs-parser`-based argv parser for the `dev`
-  verb.
-- `src/input.ts` — argv → `StartDevWorkerInput` translator (the
-  setup-DevEnv equivalent, stripped to the local case).
+- `src/cli.ts` — `runDev` main loop: build `Unstable_DevOptions`,
+  call `wrangler.unstable_dev`, block on `waitUntilExit`, wire signals.
+- `src/args.ts` — argv parser for the `dev` verb. Built on
+  `node:util.parseArgs` (strict mode → unknown flags throw; no
+  third-party dependency).
 
 ## Conventions
 
-- **Local-only.** Reject `--remote`, `--routes`, `--host`,
-  `--upstream-protocol`, `--tunnel`, `--env` at parse time with a
-  clear error. The auth hook is a stub that throws; if the user has
-  `remote = true` on a binding in `wrangler.jsonc`, that throw fires
-  with a clear message pointing at the fix.
-- **Namespace-only imports from wrangler.** `import * as wrangler from
-  "wrangler"` — same convention as `vite-plugin-cloudflare/AGENTS.md`,
-  enforced by eslint there. We follow it here for consistency and so
-  a future eslint rule can be applied uniformly.
-- **No hotkeys.** wrangler's interactive hotkey UI (`registerDevHotKeys`)
-  is intentionally not wired up. The dev session reacts to Ctrl+C
-  only. Hotkey UI is wrangler-specific TTY chrome that doesn't fit a
-  generic dev-server subprocess (the parent process may itself want
-  to own session-level UI).
-- **Service environments unsupported.** `legacy.useServiceEnvironments:
-  false`, `env: undefined`. The package targets the new unified config
-  format, which does not include service environments. If a user's
-  `wrangler.jsonc` contains `[env.X]` tables they parse fine but are
-  ignored; the wrapper warns at startup (TODO).
-- **One-shot fast-path mode (`--fast-path`) not yet implemented.** The
-  bin shim detects it and exits with a clear message. Implementation
-  is gated on the still-evolving local-bindings work and will land in
-  a follow-up.
+- **Delegate to `unstable_dev`, not `unstable_DevEnv`.** `unstable_dev`
+  wraps `startDev`, which already wires the remote-bindings auth
+  hook (`requireAuth`/`requireApiToken`), `registerDevHotKeys`, and
+  the DevEnv lifecycle. Building on the lower-level `unstable_DevEnv`
+  would force us to duplicate that plumbing. The one wart: `host`
+  is accepted at runtime by `startDev` but not declared on the
+  public `Unstable_DevOptions` type, so the options object is
+  type-cast at the `unstable_dev` call site. Tracked as a follow-up
+  for wrangler to widen `Unstable_DevOptions`.
+- **Remote bindings are supported.** Per-resource `remote = true` in
+  `wrangler.jsonc` works out of the box because `unstable_dev`
+  invokes the standard auth hook. Whole-worker remote dev
+  (`wrangler dev --remote`) is NOT supported — there's no `--remote`
+  flag here, and any attempt to pass it falls into the generic
+  "unknown flag" error from the parser.
+- **Hotkeys are enabled.** `experimental.showInteractiveDevSession:
+true` turns on the standard wrangler hotkey UI
+  (`b`/`d`/`e`/`r`/`l`/`c`/`x`/`q`). `unstable_dev` defaults this
+  to `false` (suits its test-harness origin); we override to match
+  `wrangler dev`. `startDev` only renders the UI when stdin is a
+  TTY (`isInteractive()` check at `start-dev.ts:108`/`118`), so
+  non-interactive parent processes (e.g. cf-dev with piped stdio)
+  see no hotkey overlay. The bundler installs its own
+  SIGINT/SIGTERM handlers as the teardown path for those cases.
+- **Containers are enabled.** `experimental.enableContainers: true`,
+  again to match `wrangler dev`'s default (`unstable_dev` defaults
+  it to `false`). Cloudchamber-pulled `image_uri` containers work
+  via the same auth flow that powers remote bindings.
+- **Namespace-only imports from wrangler.**
+  `import * as wrangler from "wrangler"` — same convention as
+  `vite-plugin-cloudflare/AGENTS.md`, enforced by eslint there. We
+  follow it here for consistency and so a future eslint rule can
+  be applied uniformly.
+- **`--mode` not `--env`.** Named environments are surfaced as
+  `--mode <name>` to align with the cf-dev parent process's flag
+  vocabulary; internally this maps to `unstable_dev`'s `env` option.
+- **Minimal accepted flags.** Only `--config`, `--mode`, `--port`,
+  `--host`, `--local` are recognised. Everything else belongs in
+  the user's `wrangler.jsonc`. Do not mirror `wrangler dev`'s full
+  surface — add flags here only when the cf-dev parent process
+  needs to pass them through.
 
 ## Out of scope (v1)
 
@@ -59,10 +76,6 @@ the binary runs the dev server until Ctrl+C.
 - Cloudflare Sites (`legacy.site`).
 - Multi-worker dev sessions (`MultiworkerRuntimeController`).
 - Tunnel sharing (`startTunnel`).
-- Container image-uri pulling (`dev.enableContainers: false`).
-  Local-built containers would technically work with this enabled,
-  but Cloudchamber API auth is required for image_uri pulls — keep
-  off uniformly to avoid the inconsistent failure mode.
 
 ## Build
 
@@ -71,6 +84,9 @@ the binary runs the dev server until Ctrl+C.
 - The `bin/cf-wrangler` shim imports from `../dist/index.mjs`
   directly — it's NOT processed by tsdown (it's a tiny entry that
   doesn't need bundling and we want it readable for debugging).
+- Only `wrangler` is externalized; everything else is bundled. See
+  `scripts/deps.ts` for the allowlist (validated by the monorepo's
+  `validate-package-dependencies` script).
 
 ## Testing
 

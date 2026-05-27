@@ -8,22 +8,25 @@
 		"url": "https://github.com/cloudflare/workers-sdk.git",
 		"directory": "packages/wrangler-bundler"
 	},
-	"type": "module",
-	"main": "./dist/index.mjs",
-	"types": "./dist/index.d.mts",
 	"bin": {
 		"cf-wrangler": "./bin/cf-wrangler"
 	},
+	"files": [
+		"bin",
+		"dist"
+	],
+	"type": "module",
+	"main": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.mts",
 			"import": "./dist/index.mjs"
 		}
 	},
-	"files": [
-		"bin",
-		"dist"
-	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"scripts": {
 		"build": "tsdown",
 		"dev": "tsdown --watch",
@@ -32,14 +35,11 @@
 		"test:watch": "vitest"
 	},
 	"dependencies": {
-		"miniflare": "workspace:*",
-		"wrangler": "workspace:*",
-		"yargs-parser": "^21.1.1"
+		"wrangler": "workspace:*"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-tsconfig": "workspace:*",
 		"@types/node": "catalog:default",
-		"@types/yargs-parser": "^21.0.3",
 		"tsdown": "0.16.3",
 		"typescript": "catalog:default",
 		"vitest": "catalog:default"
@@ -54,9 +54,6 @@
 	},
 	"engines": {
 		"node": ">=22.0.0"
-	},
-	"publishConfig": {
-		"access": "public"
 	},
 	"workers-sdk": {
 		"prerelease": true

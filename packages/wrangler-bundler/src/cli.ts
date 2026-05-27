@@ -1,41 +1,17 @@
 /**
  * `dev` verb handler for the `cf-wrangler` delegate binary.
  *
- * Long-running dev-server subprocess entry. Inherits stdio from the
- * parent process (which inherits from the user's terminal — so
- * wrangler/Miniflare own the TTY directly), and forwards SIGINT /
- * SIGTERM to `devEnv.teardown()`.
- *
- * Subprocess contract:
- * - Invoked as `<pkgRoot>/bin/cf-wrangler dev [user-argv...]`.
- * - bin/cf-wrangler strips the leading `dev` subcommand-discriminator
- *   token before calling us.
- * - Exit code 0 on clean teardown; 128+sig on signal-triggered exit.
- *
- * Reference flow: wsdk:packages/wrangler/src/dev.ts:296-303 (the
- * `await events.once(devEnv, "teardown")` block) plus
- * wsdk:packages/wrangler/src/dev/start-dev.ts:setupDevEnv. We
- * deliberately DO NOT call `unstable_dev` — that returns once the
- * server is ready, but we need to block until teardown.
- *
- * Namespace import only: `import * as wrangler from "wrangler"`. The
- * vite-plugin AGENTS.md enforces this via eslint and we follow the
- * same convention here.
+ * Thin adapter over `wrangler.unstable_dev` (which wraps `startDev` —
+ * giving us DevEnv lifecycle, remote-bindings auth, and hotkeys for
+ * free). Accepts only the five flags cf-dev passes through; the rest
+ * comes from the user's wrangler config.
  */
-import events from "node:events";
 import * as wrangler from "wrangler";
 import { ArgParseError, parseArgs } from "./args.js";
-import { buildInput } from "./input.js";
+import type { DevArgs } from "./args.js";
 
-/**
- * Run the bundler-based dev server. Returns the desired exit code;
- * the bin shim is responsible for `process.exit()`.
- *
- * Long-running. Returns when the user hits Ctrl+C (or a SIGTERM
- * arrives), at which point the dev server has fully torn down.
- */
 export async function runDev(argv: string[]): Promise<number> {
-	let parsed;
+	let parsed: DevArgs;
 	try {
 		parsed = parseArgs(argv);
 	} catch (err) {
@@ -46,23 +22,13 @@ export async function runDev(argv: string[]): Promise<number> {
 		throw err;
 	}
 
-	const input = buildInput(parsed);
-
-	// Construct DevEnv directly — `unstable_dev` resolves once the
-	// server is ready, but we need to block until teardown like
-	// wrangler's own `dev` command does at dev.ts:299.
-	const devEnv = new wrangler.unstable_DevEnv();
-
-	// Signal forwarding. Map signals to the conventional 128+sig exit
-	// code so the parent process observes a clean signal-triggered
-	// exit.
+	// SIGINT/SIGTERM fallback for non-TTY parents — hotkeys handle
+	// the TTY case.
 	let signalled: NodeJS.Signals | null = null;
+	let server: wrangler.Unstable_DevWorker | undefined;
 	const onSignal = (sig: NodeJS.Signals) => {
 		signalled = sig;
-		// Fire-and-forget; we await teardown via `events.once` below.
-		// If teardown fails the unhandledRejection handler will surface
-		// it. The DevEnv emits "teardown" regardless of outcome.
-		void devEnv.teardown().catch((err) => {
+		void server?.stop().catch((err) => {
 			process.stderr.write(`teardown error: ${err}\n`);
 		});
 	};
@@ -72,29 +38,42 @@ export async function runDev(argv: string[]): Promise<number> {
 	process.on("SIGTERM", onSigTerm);
 
 	try {
-		// throwErrors=true so config-validation failures surface as
-		// thrown errors here instead of being swallowed and emitted
-		// asynchronously as ErrorEvent. This keeps the "wrangler.jsonc
-		// is missing" / "main is invalid" failure modes unambiguous.
-		await devEnv.config.set(
-			input as Parameters<typeof devEnv.config.set>[0],
-			true
-		);
+		const options = {
+			config: parsed.config,
+			env: parsed.mode,
+			port: parsed.port,
+			local: parsed.local,
+			host: parsed.host,
+			experimental: {
+				disableExperimentalWarning: true,
+				// Both default to false in `unstable_dev` (suits its
+				// test-harness origin); `wrangler dev` effectively
+				// defaults both to true. Match `wrangler dev`.
+				showInteractiveDevSession: true,
+				enableContainers: true,
+			},
+		} as wrangler.Unstable_DevOptions;
 
-		// Block on teardown. `events.once` resolves when the EventEmitter
-		// emits "teardown" — either user-triggered (Ctrl+C → onSignal)
-		// or internal (fatal error from a controller).
-		await events.once(devEnv, "teardown");
+		// Entrypoint comes from `main` in wrangler config.
+		server = await wrangler.unstable_dev("", options);
+		await server.waitUntilExit();
 	} finally {
 		process.off("SIGINT", onSigInt);
 		process.off("SIGTERM", onSigTerm);
+		if (server) {
+			try {
+				await server.stop();
+			} catch {
+				// already torn down
+			}
+		}
 	}
 
-	// Map signal-triggered teardown to the conventional 128+sig exit
-	// code so the user-visible exit code is identical whether they
-	// Ctrl+C in this binary directly or via a parent process that
-	// delegates to it.
-	if (signalled === "SIGINT") return 130;
-	if (signalled === "SIGTERM") return 143;
+	if (signalled === "SIGINT") {
+		return 130;
+	}
+	if (signalled === "SIGTERM") {
+		return 143;
+	}
 	return 0;
 }
