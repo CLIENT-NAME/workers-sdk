@@ -8,7 +8,7 @@ import { expect } from "vitest";
 import {
 	getSubdomainValues,
 	getSubdomainValuesAPIMock,
-} from "../../triggers/deploy";
+} from "@cloudflare/deploy-helpers";
 import {
 	mockGetWorkerSubdomain,
 	mockUpdateWorkerSubdomain,

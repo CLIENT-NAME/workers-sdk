@@ -21,7 +21,7 @@ import PQueue from "p-queue";
 import prettyBytes from "pretty-bytes";
 import { FormData } from "undici";
 import { fetchResult } from "./cfetch";
-import { formatTime } from "./deploy/deploy";
+import { formatTime } from "@cloudflare/workers-utils";
 import { logger, LOGGER_LEVELS } from "./logger";
 import { hashFile } from "./pages/hash";
 import { isJwtExpired } from "./pages/upload";
